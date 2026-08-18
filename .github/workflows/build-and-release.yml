@@ -22,7 +22,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Build main project
-        run: msbuild DCOMUploadExec.vcxproj /m /p:Configuration=Release /p:Platform=x64
+        run: msbuild DCOMUploadExec.sln /m /p:Configuration=Release /p:Platform=x64 /t:DCOMUploadExec
 
       - name: Upload main artifact
         uses: actions/upload-artifact@v4
