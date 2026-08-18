@@ -1,0 +1,124 @@
+name: Build and Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-main:
+    name: Build DCOMUploadExec
+    runs-on: windows-2022
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build main project
+        run: msbuild DCOMUploadExec.sln /m /p:Configuration=Release /p:Platform=x64 /t:DCOMUploadExec
+
+      - name: Upload main artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dcomuploadexec-x64
+          path: |
+            x64/Release/DCOMUploadExec.exe
+            x64/Release/DCOMUploadExec.pdb
+          if-no-files-found: error
+
+  build-assemblypayload:
+    name: Build AssemblyPayload
+    runs-on: windows-2019
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore AssemblyPayload packages
+        run: nuget restore DCOMUploadExec.sln
+
+      - name: Install Visual Studio 2015 Build Tools
+        shell: pwsh
+        run: |
+          choco install microsoft-build-tools --no-progress -y
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Visual Studio 2015 Build Tools with Chocolatey."
+          }
+
+      - name: Build AssemblyPayload with MSBuild 14.0
+        shell: pwsh
+        run: |
+          $msbuild14 = @(
+            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\MSBuild.exe",
+            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\amd64\MSBuild.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $msbuild14) {
+            throw "MSBuild 14.0 was not found after installing Visual Studio 2015 Build Tools."
+          }
+
+          $fileVersion = (Get-Item $msbuild14).VersionInfo.FileVersion
+          if ($fileVersion -notmatch "^14\.") {
+            throw "Expected MSBuild 14.x but found version '$fileVersion' at '$msbuild14'."
+          }
+
+          & $msbuild14 "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU
+
+      - name: Upload AssemblyPayload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assemblypayload
+          path: |
+            AssemblyPayload/bin/Release/payload.dll
+            AssemblyPayload/bin/Release/payload.pdb
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - build-main
+      - build-assemblypayload
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download main artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dcomuploadexec-x64
+          path: artifacts/dcomuploadexec-x64
+
+      - name: Download payload artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: assemblypayload
+          path: artifacts/assemblypayload
+
+      - name: Package release artifacts
+        run: |
+          cd artifacts
+          zip -r ../DCOMUploadExec-${{ github.ref_name }}-x64.zip dcomuploadexec-x64
+          zip -r ../AssemblyPayload-${{ github.ref_name }}.zip assemblypayload
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            DCOMUploadExec-${{ github.ref_name }}-x64.zip
+            AssemblyPayload-${{ github.ref_name }}.zip
