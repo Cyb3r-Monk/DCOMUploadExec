@@ -15,6 +15,16 @@ The solution contains 2 projects
 
 -  **AssemblyPayload** - A .NET DLL that pops a MessageBox. It is the default payload **DCOMUploadExec** uses
 
+## Build
+
+`DCOMUploadExec` and `AssemblyPayload` should be built separately:
+
+1. Build `DCOMUploadExec` with Visual Studio 2019+ (toolset `v142`), for example `Release|x64`.
+2. Build `AssemblyPayload` with MSBuild 14.0 (Visual Studio 2015 Build Tools), for example:
+   - `MSBuild.exe AssemblyPayload\AssemblyPayload.csproj /p:Configuration=Release /p:Platform=AnyCPU`
+
+The default payload output is `AssemblyPayload\bin\Release\payload.dll`.
+
   
 
 ## Basic Usage
