@@ -73,7 +73,7 @@ jobs:
             throw "lib.exe was not found at '$libToolPath'."
           }
 
-          msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU /p:DllExportLibToolPath="$libToolPath" /p:DllExportLibToolDllPath="$libToolPath"
+          msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=x64 /p:DllExportTargetFrameworkVersion=v4.0 /p:DllExportLibToolPath="$libToolPath" /p:DllExportLibToolDllPath="$libToolPath"
 
       - name: Upload AssemblyPayload artifact
         uses: actions/upload-artifact@v4
