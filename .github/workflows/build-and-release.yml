@@ -62,6 +62,11 @@ jobs:
             throw "MSBuild 14.0 was not found after installing Visual Studio 2015 Build Tools."
           }
 
+          $fileVersion = (Get-Item $msbuild14).VersionInfo.FileVersion
+          if ($fileVersion -notmatch "^14\.") {
+            throw "Expected MSBuild 14.x but found version '$fileVersion' at '$msbuild14'."
+          }
+
           & $msbuild14 "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU
 
       - name: Upload AssemblyPayload artifact
@@ -95,6 +100,9 @@ jobs:
         with:
           name: assemblypayload
           path: artifacts/assemblypayload
+
+      - name: Ensure zip is available
+        run: sudo apt-get update && sudo apt-get install -y zip
 
       - name: Package release artifacts
         run: |
