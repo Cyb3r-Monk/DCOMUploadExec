@@ -37,7 +37,7 @@ jobs:
 
   build-assemblypayload:
     name: Build AssemblyPayload
-    runs-on: windows-2019
+    runs-on: windows-2022
     permissions:
       contents: read
 
