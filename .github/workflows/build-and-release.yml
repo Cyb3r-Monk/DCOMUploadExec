@@ -13,6 +13,8 @@ jobs:
   build-main:
     name: Build DCOMUploadExec
     runs-on: windows-2022
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
@@ -36,6 +38,8 @@ jobs:
   build-assemblypayload:
     name: Build AssemblyPayload
     runs-on: windows-2019
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
