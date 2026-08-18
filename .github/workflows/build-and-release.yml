@@ -38,7 +38,7 @@ jobs:
 
   build-assemblypayload:
     name: Build AssemblyPayload
-    runs-on: windows-2022
+    runs-on: windows-2019
 
     steps:
       - name: Checkout
@@ -48,18 +48,23 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Restore AssemblyPayload packages
-        run: nuget restore AssemblyPayload/AssemblyPayload.csproj
+        run: nuget restore AssemblyPayload/packages.config -PackagesDirectory packages
 
       - name: Install Visual Studio 2015 Build Tools
-        run: choco install microsoft-build-tools --version=14.0.25420.1 --no-progress -y
+        run: choco install microsoft-build-tools --no-progress -y
 
       - name: Build AssemblyPayload with MSBuild 14.0
         shell: pwsh
         run: |
-          $msbuild14 = "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"
-          if (-not (Test-Path $msbuild14)) {
-            throw "MSBuild 14.0 not found at '$msbuild14'."
+          $msbuild14 = @(
+            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\MSBuild.exe",
+            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\amd64\MSBuild.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $msbuild14) {
+            throw "MSBuild 14.0 was not found after installing Visual Studio 2015 Build Tools."
           }
+
           & $msbuild14 "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU
 
       - name: Upload AssemblyPayload artifact
