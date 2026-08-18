@@ -48,35 +48,32 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Restore AssemblyPayload packages
         run: nuget restore DCOMUploadExec.sln
 
-      - name: Install Visual Studio 2015 Build Tools
+      - name: Build AssemblyPayload with hosted MSBuild
         shell: pwsh
         run: |
-          choco install visualstudio2015buildtools --no-progress -y
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install Visual Studio 2015 Build Tools with Chocolatey."
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) {
+            throw "Visual Studio with MSBuild and VC tools was not found."
           }
 
-      - name: Build AssemblyPayload with MSBuild 14.0
-        shell: pwsh
-        run: |
-          $msbuild14 = @(
-            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\MSBuild.exe",
-            "$env:ProgramFiles(x86)\MSBuild\14.0\Bin\amd64\MSBuild.exe"
-          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-          if (-not $msbuild14) {
-            throw "MSBuild 14.0 was not found after installing Visual Studio 2015 Build Tools."
+          $vcToolsVersionDir = Get-ChildItem (Join-Path $vsPath "VC\Tools\MSVC") -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          if (-not $vcToolsVersionDir) {
+            throw "Could not locate the VC tools directory under '$vsPath'."
           }
 
-          $fileVersion = (Get-Item $msbuild14).VersionInfo.FileVersion
-          if ($fileVersion -notmatch "^14\.") {
-            throw "Expected MSBuild 14.x but found version '$fileVersion' at '$msbuild14'."
+          $libToolPath = Join-Path $vcToolsVersionDir.FullName "bin\Hostx64\x64"
+          if (-not (Test-Path (Join-Path $libToolPath "lib.exe"))) {
+            throw "lib.exe was not found at '$libToolPath'."
           }
 
-          & $msbuild14 "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU
+          msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=AnyCPU /p:DllExportLibToolPath="$libToolPath" /p:DllExportLibToolDllPath="$libToolPath"
 
       - name: Upload AssemblyPayload artifact
         uses: actions/upload-artifact@v4
