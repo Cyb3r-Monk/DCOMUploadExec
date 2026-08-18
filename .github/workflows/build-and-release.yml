@@ -9,9 +9,6 @@ on:
       - "v*"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build-main:
     name: Build DCOMUploadExec
@@ -48,7 +45,7 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Restore AssemblyPayload packages
-        run: nuget restore AssemblyPayload/packages.config -PackagesDirectory packages
+        run: nuget restore DCOMUploadExec.sln
 
       - name: Install Visual Studio 2015 Build Tools
         run: choco install microsoft-build-tools --no-progress -y
@@ -79,6 +76,8 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs:
       - build-main
       - build-assemblypayload
