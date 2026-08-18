@@ -8,6 +8,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag name for the release (for example, v1.0.0)"
+        required: true
+        type: string
 
 jobs:
   build-main:
@@ -92,7 +97,9 @@ jobs:
     needs:
       - build-main
       - build-assemblypayload
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}
 
     steps:
       - name: Download main artifact
@@ -110,12 +117,13 @@ jobs:
       - name: Package release artifacts
         run: |
           cd artifacts
-          zip -r ../DCOMUploadExec-${{ github.ref_name }}-x64.zip dcomuploadexec-x64
-          zip -r ../AssemblyPayload-${{ github.ref_name }}.zip assemblypayload
+          zip -r ../DCOMUploadExec-${{ env.RELEASE_TAG }}-x64.zip dcomuploadexec-x64
+          zip -r ../AssemblyPayload-${{ env.RELEASE_TAG }}.zip assemblypayload
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            DCOMUploadExec-${{ github.ref_name }}-x64.zip
-            AssemblyPayload-${{ github.ref_name }}.zip
+            DCOMUploadExec-${{ env.RELEASE_TAG }}-x64.zip
+            AssemblyPayload-${{ env.RELEASE_TAG }}.zip
