@@ -54,7 +54,7 @@ jobs:
       - name: Install Visual Studio 2015 Build Tools
         shell: pwsh
         run: |
-          choco install microsoft-build-tools --no-progress -y
+          choco install visualstudio2015buildtools --no-progress -y
           if ($LASTEXITCODE -ne 0) {
             throw "Failed to install Visual Studio 2015 Build Tools with Chocolatey."
           }
