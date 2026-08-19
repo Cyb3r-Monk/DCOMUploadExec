@@ -82,6 +82,7 @@ jobs:
             throw "x86 lib.exe was not found at '$libToolPathX86'."
           }
 
+          $env:PATH = "$libToolPathX64;$libToolPathX86;$env:PATH"
           msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=x64 /p:DllExportTargetFrameworkVersion=v4.0 /p:DllExportLibToolPath="$libToolPathX64" /p:DllExportLibToolDllPath="$libToolPathX64" /p:VCToolsVersion="$($vcToolsVersionDir.Name)"
 
       - name: Upload AssemblyPayload artifact
