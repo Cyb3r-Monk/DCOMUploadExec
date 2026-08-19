@@ -74,7 +74,7 @@ jobs:
           }
 
           $libToolPathX64 = Join-Path $vcToolsVersionDir.FullName "bin\Hostx64\x64"
-          $libToolPathX86 = Join-Path $vcToolsVersionDir.FullName "bin\Hostx64\x86"
+          $libToolPathX86 = Join-Path $vcToolsVersionDir.FullName "bin\Hostx86\x86"
           if (-not (Test-Path (Join-Path $libToolPathX64 "lib.exe"))) {
             throw "x64 lib.exe was not found at '$libToolPathX64'."
           }
