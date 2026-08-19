@@ -54,6 +54,7 @@ jobs:
           "VC_TOOLS_VERSION=$($vcToolsVersionDir.Name)" >> $env:GITHUB_ENV
 
       - name: Build main project
+        shell: pwsh
         run: msbuild DCOMUploadExec.sln /m /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v145 /p:VCToolsVersion=$env:VC_TOOLS_VERSION /t:DCOMUploadExec
 
       - name: Upload main artifact
