@@ -29,7 +29,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Build main project
-        run: msbuild DCOMUploadExec.sln /m /p:Configuration=Release /p:Platform=x64 /t:DCOMUploadExec
+        run: msbuild DCOMUploadExec.sln /m /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v145 /t:DCOMUploadExec
 
       - name: Upload main artifact
         uses: actions/upload-artifact@v4
@@ -68,17 +68,22 @@ jobs:
             throw "Visual Studio with MSBuild and VC tools was not found."
           }
 
-          $vcToolsVersionDir = Get-ChildItem (Join-Path $vsPath "VC\Tools\MSVC") -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          $vcToolsVersionDir = Get-ChildItem (Join-Path $vsPath "VC\Tools\MSVC") -Directory | Where-Object { $_.Name -like "14.29*" } | Sort-Object Name -Descending | Select-Object -First 1
           if (-not $vcToolsVersionDir) {
-            throw "Could not locate the VC tools directory under '$vsPath'."
+            throw "Could not locate MSVC 14.29 x64/x86 build tools under '$vsPath'."
           }
 
-          $libToolPath = Join-Path $vcToolsVersionDir.FullName "bin\Hostx64\x64"
-          if (-not (Test-Path (Join-Path $libToolPath "lib.exe"))) {
-            throw "lib.exe was not found at '$libToolPath'."
+          $libToolPathX64 = Join-Path $vcToolsVersionDir.FullName "bin\Hostx64\x64"
+          $libToolPathX86 = Join-Path $vcToolsVersionDir.FullName "bin\Hostx86\x86"
+          if (-not (Test-Path (Join-Path $libToolPathX64 "lib.exe"))) {
+            throw "x64 lib.exe was not found at '$libToolPathX64'."
+          }
+          if (-not (Test-Path (Join-Path $libToolPathX86 "lib.exe"))) {
+            throw "x86 lib.exe was not found at '$libToolPathX86'."
           }
 
-          msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=x64 /p:DllExportTargetFrameworkVersion=v4.0 /p:DllExportLibToolPath="$libToolPath" /p:DllExportLibToolDllPath="$libToolPath"
+          $env:PATH = "$libToolPathX64;$libToolPathX86;$env:PATH"
+          msbuild "AssemblyPayload\AssemblyPayload.csproj" /m /p:Configuration=Release /p:Platform=x64 /p:DllExportTargetFrameworkVersion=v4.0 /p:DllExportLibToolPath="$libToolPathX64" /p:DllExportLibToolDllPath="$libToolPathX64" /p:VCToolsVersion="$($vcToolsVersionDir.Name)"
 
       - name: Upload AssemblyPayload artifact
         uses: actions/upload-artifact@v4
