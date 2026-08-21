@@ -3,13 +3,16 @@
 
 HRESULT MsiUploadExec(IUnknown* pIMsiServerAuthen, COAUTHINFO* pAuthInfo);
 
+static void PrintUsage(const wchar_t* programName) {
+	std::wcout << L"Usage: " << programName << L" [domain]\\[user]:[password]@[address]" << std::endl;
+	std::wcout << L"Local Usage: " << programName << L" " << LOCAL_ATTACK_KEYWORD << L" (Run this as administrator)" << std::endl;
+}
 
 int wmain(int argc, wchar_t* argv[]) {
 
     std::wstring domain, user, password, address;
-    if (argc < 2 or !parseArgument(argv[1], domain, user, password, address)) {
-		std::wcerr << L"Usage: " << argv[0] << L" [domain]\\[user]:[password]@[address]" << std::endl;
-		std::wcerr << L"Local Usage: " << argv[0] <<L" " << LOCAL_ATTACK_KEYWORD << L" (Run this as administrator)" <<std::endl;
+    if (argc < 2 || !parseArgument(argv[1], domain, user, password, address)) {
+		PrintUsage(argv[0]);
         return -1;
     }
 
